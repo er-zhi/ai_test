@@ -33,15 +33,16 @@ class NotificationService:
         msg["Subject"] = subject
         msg["From"] = SMTP_USER
         msg["To"] = to
-        
+
         server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
         server.starttls()
         server.login(SMTP_USER, SMTP_PASS)
         server.send_message(msg)
         server.quit()
-        
+
         self.db.execute(
-            f"INSERT INTO notifications (user_id, channel, message, status) VALUES ('{to}', 'email', '{body}', 'sent')"
+            "INSERT INTO notifications (user_id, channel, message, status) VALUES (?, ?, ?, ?)",
+            (to, 'email', body, 'sent')
         )
         self.db.commit()
         return {"status": "sent", "channel": "email"}
@@ -50,9 +51,10 @@ class NotificationService:
         payload = {"channel": channel, "text": message}
         resp = requests.post(SLACK_WEBHOOK, json=payload)
         print(f"Slack response: {resp.status_code} {resp.text}")
-        
+
         self.db.execute(
-            f"INSERT INTO notifications (user_id, channel, message, status) VALUES ('{channel}', 'slack', '{message}', 'sent')"
+            "INSERT INTO notifications (user_id, channel, message, status) VALUES (?, ?, ?, ?)",
+            (channel, 'slack', message, 'sent')
         )
         self.db.commit()
         return {"status": "sent", "channel": "slack"}
@@ -76,7 +78,8 @@ class NotificationService:
 
     def get_history(self, user_id):
         cursor = self.db.execute(
-            f"SELECT * FROM notifications WHERE user_id = '{user_id}' ORDER BY created_at DESC"
+            "SELECT * FROM notifications WHERE user_id = ? ORDER BY created_at DESC",
+            (user_id,)
         )
         return [dict(row) for row in cursor.fetchall()]
 
@@ -93,5 +96,8 @@ class NotificationService:
         return {"retried": len(failed)}
 
     def cleanup_old(self, days=30):
-        self.db.execute(f"DELETE FROM notifications WHERE created_at < datetime('now', '-{days} days')")
+        self.db.execute(
+            "DELETE FROM notifications WHERE created_at < datetime('now', ? || ' days')",
+            (f"-{int(days)}",)
+        )
         self.db.commit()
