@@ -16,6 +16,13 @@ jobs:
     if: contains(github.event.comment.body, '@kai')
     runs-on: [self-hosted, kai]
     steps:
+      - uses: actions/create-github-app-token@v1
+        id: kai-token
+        with:
+          app-id: 3394026
+          private-key: ${{ secrets.KAI_APP_PRIVATE_KEY }}
+
       - uses: er-zhi/kai@v1
         with:
+          github_token: ${{ steps.kai-token.outputs.token }}
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
