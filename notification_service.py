@@ -91,8 +91,8 @@ class NotificationService:
                     self.send_email(n[1], "Retry", n[3])
                 elif n[2] == "slack":
                     self.send_slack(n[1], n[3])
-            except:
-                pass
+            except Exception as e:
+                print(f"Retry failed for notification {n[0]}: {e}")
         return {"retried": len(failed)}
 
     def cleanup_old(self, days=30):
