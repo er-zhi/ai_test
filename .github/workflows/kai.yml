@@ -7,7 +7,7 @@ on:
     types: [created]
 
 permissions:
-  contents: read
+  contents: write
   issues: write
   pull-requests: write
 
@@ -17,6 +17,3 @@ jobs:
     runs-on: [self-hosted, kai]
     steps:
       - uses: er-zhi/kai@v1
-        with:
-          app_id: ${{ secrets.KAI_APP_ID }}
-          app_private_key: ${{ secrets.KAI_APP_PRIVATE_KEY }}
