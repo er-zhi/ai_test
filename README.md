@@ -20,7 +20,7 @@ Mention `@kai` in any PR comment or issue to trigger the bot:
 - **Slack**: Webhook integration for channel notifications
 - **Telegram**: Bot API for direct messages
 
-Features: bulk send, auto-retry, notification history, 30-day retention cleanup.
+Features: bulk send, auto-retry, notification history, 30-day retention cleanup. All notifications are stored in SQLite for history lookup and audit tracking.
 
 ## Setup
 
