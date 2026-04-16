@@ -17,3 +17,5 @@ jobs:
     runs-on: [self-hosted, kai]
     steps:
       - uses: er-zhi/kai@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
