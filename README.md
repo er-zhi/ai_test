@@ -13,6 +13,15 @@ Mention `@kai` in any PR comment or issue to trigger the bot:
 @kai run tests and report results
 ```
 
+## Notification Service
+
+**Multi-channel notification support:**
+- **Email**: SMTP-based delivery
+- **Slack**: Webhook integration for channel notifications
+- **Telegram**: Bot API for direct messages
+
+Features: bulk send, auto-retry, notification history, 30-day retention cleanup.
+
 ## Setup
 
 1. Add `ANTHROPIC_API_KEY` to repo secrets
