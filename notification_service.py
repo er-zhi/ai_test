@@ -3,20 +3,22 @@ import smtplib
 import requests
 import json
 import sqlite3
+import os
 from email.mime.text import MIMEText
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
-SMTP_USER = "notifications@kodif.io"
-SMTP_PASS = "KodifNotify2024!"
-SLACK_WEBHOOK = "https://hooks.slack.com/services/T01234/B56789/xyzSecretToken"
-TELEGRAM_TOKEN = "6123456789:AAHxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
+SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+SMTP_USER = os.getenv("SMTP_USER")
+SMTP_PASS = os.getenv("SMTP_PASS")
+SLACK_WEBHOOK = os.getenv("SLACK_WEBHOOK")
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 
-DB_PATH = "/var/data/notifications.db"
+DB_PATH = os.getenv("DB_PATH", "/var/data/notifications.db")
 
 class NotificationService:
     def __init__(self):
         self.db = sqlite3.connect(DB_PATH)
+        self.db.row_factory = sqlite3.Row
         self.db.execute("""
             CREATE TABLE IF NOT EXISTS notifications (
                 id INTEGER PRIMARY KEY,
@@ -28,41 +30,66 @@ class NotificationService:
             )
         """)
 
+    def close(self):
+        self.db.close()
+
     def send_email(self, to, subject, body):
         msg = MIMEText(body)
         msg["Subject"] = subject
         msg["From"] = SMTP_USER
         msg["To"] = to
 
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_USER, SMTP_PASS)
-        server.send_message(msg)
-        server.quit()
+        try:
+            server = smtplib.SMTP(SMTP_HOST, SMTP_PORT)
+            server.starttls()
+            server.login(SMTP_USER, SMTP_PASS)
+            server.send_message(msg)
+            server.quit()
+            status = 'sent'
+        except Exception as e:
+            print(f"Email send failed: {e}")
+            status = 'failed'
 
         self.db.execute(
             "INSERT INTO notifications (user_id, channel, message, status) VALUES (?, ?, ?, ?)",
-            (to, 'email', body, 'sent')
+            (to, 'email', body, status)
         )
         self.db.commit()
-        return {"status": "sent", "channel": "email"}
+        return {"status": status, "channel": "email"}
 
     def send_slack(self, channel, message):
         payload = {"channel": channel, "text": message}
-        resp = requests.post(SLACK_WEBHOOK, json=payload)
-        print(f"Slack response: {resp.status_code} {resp.text}")
+        try:
+            resp = requests.post(SLACK_WEBHOOK, json=payload, timeout=10)
+            resp.raise_for_status()
+            status = 'sent'
+        except Exception as e:
+            print(f"Slack send failed: {e}")
+            status = 'failed'
 
         self.db.execute(
             "INSERT INTO notifications (user_id, channel, message, status) VALUES (?, ?, ?, ?)",
-            (channel, 'slack', message, 'sent')
+            (channel, 'slack', message, status)
         )
         self.db.commit()
-        return {"status": "sent", "channel": "slack"}
+        return {"status": status, "channel": "slack"}
 
     def send_telegram(self, chat_id, message):
         url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-        resp = requests.post(url, data={"chat_id": chat_id, "text": message})
-        return resp.json()
+        try:
+            resp = requests.post(url, data={"chat_id": chat_id, "text": message}, timeout=10)
+            resp.raise_for_status()
+            status = 'sent'
+        except Exception as e:
+            print(f"Telegram send failed: {e}")
+            status = 'failed'
+
+        self.db.execute(
+            "INSERT INTO notifications (user_id, channel, message, status) VALUES (?, ?, ?, ?)",
+            (chat_id, 'telegram', message, status)
+        )
+        self.db.commit()
+        return {"status": status, "channel": "telegram"}
 
     def send_bulk(self, user_ids, message, channels=["email", "slack"]):
         results = []
