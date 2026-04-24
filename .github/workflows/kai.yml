@@ -30,7 +30,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: er-zhi/kai@v1
+      - uses: kodif-team/kai@v1
         with:
           github_token: ${{ steps.kai-token.outputs.token }}
           router_url: http://kai-router:8080
