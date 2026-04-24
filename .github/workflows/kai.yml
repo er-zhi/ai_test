@@ -18,9 +18,7 @@ jobs:
       !contains(github.event.comment.user.login, '[bot]') &&
       !contains(github.event.comment.user.login, 'kodif-ai')
     runs-on: [self-hosted, kai]
-    concurrency:
-      group: kai-pr-${{ github.event.issue.number || github.event.pull_request.number }}
-      cancel-in-progress: true
+    # Concurrency removed: simplified action runs in <2s, no long-running CLI
     steps:
       - uses: actions/create-github-app-token@v1
         id: kai-token
